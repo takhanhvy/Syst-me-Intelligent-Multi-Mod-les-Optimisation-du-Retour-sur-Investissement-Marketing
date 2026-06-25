@@ -1,12 +1,12 @@
-"""Dashboard decisionnel churn (Streamlit) - oriente utilisateur metier.
+"""Dashboard décisionnel churn (Streamlit) — orienté utilisateur métier.
 
-Outil pour responsable marketing / CRM / direction financiere :
-- KPI (clients a risque, revenu global a risque)
-- Priorisation des clients a contacter
-- Simulateur temps reel + pourquoi (facteurs SHAP) via l'API
+Outil pour responsable marketing / CRM / direction financière :
+- KPI (clients à risque, revenu global à risque)
+- Priorisation des clients à contacter
+- Simulateur temps réel + pourquoi (facteurs SHAP) via l'API
 
-Le dashboard appelle l'API REST (Front / API / Modele). Aucun visuel scientifique ici.
-Lancement : streamlit run dashboard/app.py   (API lancee en parallele)
+Le dashboard appelle l'API REST (Front / API / Modèle). Aucun visuel scientifique ici.
+Lancement : streamlit run dashboard/app.py   (API lancée en parallèle)
 """
 import os
 import sys
@@ -23,19 +23,18 @@ from src import config
 
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 
-st.set_page_config(page_title="Pilotage Retention Client", layout="wide")
+st.set_page_config(page_title="Pilotage Rétention Client", layout="wide")
 
-# Actions metier suggerees selon le facteur de risque
 ACTIONS = {
     "csat_score": "Programmer un appel satisfaction",
-    "nps_score": "Geste commercial / ecoute client",
-    "payment_failures": "Verifier le moyen de paiement, relance douce",
-    "tenure_months": "Renforcer l'onboarding (client recent)",
-    "monthly_logins": "Campagne de re-engagement",
+    "nps_score": "Geste commercial / écoute client",
+    "payment_failures": "Vérifier le moyen de paiement, relance douce",
+    "tenure_months": "Renforcer l'onboarding (client récent)",
+    "monthly_logins": "Campagne de ré-engagement",
     "last_login_days_ago": "Relance : client inactif",
-    "usage_growth_rate": "Proposer une demo des fonctionnalites",
-    "support_tickets": "Prioriser la resolution des tickets",
-    "avg_resolution_time": "Accelerer le support",
+    "usage_growth_rate": "Proposer une démo des fonctionnalités",
+    "support_tickets": "Prioriser la résolution des tickets",
+    "avg_resolution_time": "Accélérer le support",
     "weekly_active_days": "Stimuler l'usage hebdomadaire",
 }
 
@@ -50,20 +49,18 @@ def api_post(path, payload):
 
 @st.cache_data(show_spinner=False)
 def load_data():
-    df = config.load_raw()
-    return df
+    return config.load_raw()
 
 
 def to_payload(df):
     sub = df[config.ALL_FEATURES].copy()
-    sub = sub.astype(object).where(pd.notna(sub), None)  # NaN -> None (JSON)
+    sub = sub.astype(object).where(pd.notna(sub), None)
     return sub.to_dict(orient="records")
 
 
 @st.cache_data(show_spinner="Scoring des clients via l'API...")
 def score_all(_df, api_url):
-    payload = {"customers": to_payload(_df)}
-    r = requests.post(f"{api_url}/predict-batch", json=payload, timeout=300)
+    r = requests.post(f"{api_url}/predict-batch", json={"customers": to_payload(_df)}, timeout=300)
     r.raise_for_status()
     res = r.json()["results"]
     out = _df.copy()
@@ -82,7 +79,6 @@ def check_api():
         return False
 
 
-# ---------------- Sidebar ----------------
 st.sidebar.title("Pilotage Rétention Client")
 page = st.sidebar.radio("Navigation", [
     "Vue d'ensemble", "Clients à risque", "Simulateur client", "Confiance du modèle",
@@ -90,8 +86,7 @@ page = st.sidebar.radio("Navigation", [
 st.sidebar.caption(f"API : {API_URL}")
 
 if not check_api():
-    st.error(f"⚠️ L'API n'est pas joignable sur {API_URL}.\n\n"
-             f"Lancez-la d'abord :  `uvicorn api.main:app`")
+    st.error(f"L'API n'est pas joignable sur {API_URL}.\n\nLancez-la d'abord :  uvicorn api.main:app")
     st.stop()
 
 df = load_data()
@@ -99,9 +94,8 @@ scored = score_all(df, API_URL)
 THR = api_get("/model-info").json()["threshold"]
 
 
-# ---------------- Page 1 : Vue d'ensemble ----------------
 if page == "Vue d'ensemble":
-    st.title("Vue d'ensemble - risque de résiliation")
+    st.title("Vue d'ensemble — risque de résiliation")
     n = len(scored)
     n_risk = int((scored["churn_pred"] == 1).sum())
     rev_risk = float(scored["revenue_at_risk"].sum())
@@ -110,8 +104,9 @@ if page == "Vue d'ensemble":
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Clients", f"{n:,}".replace(",", " "))
     c2.metric("Clients à risque", f"{n_risk:,}".replace(",", " "))
-    c2.caption(f"🔴 {n_risk/n:.1%} de la base clients")
+    c2.caption(f"{n_risk/n:.1%} de la base clients")
     c3.metric("Churns attendus", f"{exp_churn:,.0f}".replace(",", " "))
+    c3.caption(f"{exp_churn/n:.1%} taux de churn attendu")
     c4.metric("Revenu global à risque", f"{rev_risk:,.0f} €".replace(",", " "))
 
     st.divider()
@@ -133,13 +128,12 @@ if page == "Vue d'ensemble":
         fig.update_layout(height=350)
         st.plotly_chart(fig, width="stretch")
 
-    st.info(f"Le revenu à risque correspond à la somme, sur tous les clients, de "
-            f"**probabilité de churn × revenu du client**. Seuil de décision : {THR:.2f}.")
+    st.info(f"Le revenu à risque = somme sur tous les clients de (probabilité de churn × revenu du client). "
+            f"Seuil de décision : {THR:.2f}.")
 
 
-# ---------------- Page 2 : Clients à risque ----------------
 elif page == "Clients à risque":
-    st.title("Clients à risque - priorisation des actions")
+    st.title("Clients à risque — priorisation des actions")
     st.caption("Triés par revenu à risque décroissant : qui contacter en priorité.")
 
     colf1, colf2, colf3 = st.columns(3)
@@ -164,13 +158,12 @@ elif page == "Clients à risque":
     st.dataframe(show, width="stretch", height=480, hide_index=True)
 
     st.metric("Revenu à risque (sélection)", f"{view['revenue_at_risk'].sum():,.0f} €".replace(",", " "))
-    st.download_button("⬇️ Exporter la liste (CSV)", show.to_csv(index=False).encode("utf-8"),
+    st.download_button("Exporter la liste (CSV)", show.to_csv(index=False).encode("utf-8"),
                        "clients_a_risque.csv", "text/csv")
 
 
-# ---------------- Page 3 : Simulateur ----------------
 elif page == "Simulateur client":
-    st.title("Simulateur - prédiction en temps réel")
+    st.title("Simulateur — prédiction en temps réel")
     st.caption("Saisissez (ou modifiez) un profil client et obtenez la probabilité de churn + les facteurs.")
 
     base = df.sample(1, random_state=7).iloc[0]
@@ -211,7 +204,7 @@ elif page == "Simulateur client":
             comp = sorted([str(x) for x in df["complaint_type"].dropna().unique()])
             vals["complaint_type"] = st.selectbox("Type de plainte", ["(aucune)"] + comp)
             vals["survey_response"] = st.selectbox("Réponse enquête", sorted(df["survey_response"].unique()))
-        submitted = st.form_submit_button("🔮 Prédire le risque", width="stretch")
+        submitted = st.form_submit_button("Prédire le risque", width="stretch")
 
     if submitted:
         if vals["complaint_type"] == "(aucune)":
@@ -225,25 +218,22 @@ elif page == "Simulateur client":
             colg, cole = st.columns([1, 1.3])
             with colg:
                 gauge = go.Figure(go.Indicator(
-                    mode="gauge+number", value=proba * 100,
-                    number={"suffix": " %"},
+                    mode="gauge+number", value=proba * 100, number={"suffix": " %"},
                     title={"text": f"Probabilité de churn — {res['risk_level']}"},
                     gauge={"axis": {"range": [0, 100]},
                            "bar": {"color": "#C44E52" if res["churn_prediction"] else "#4C72B0"},
-                           "threshold": {"line": {"color": "black", "width": 3},
-                                         "value": THR * 100}}))
+                           "threshold": {"line": {"color": "black", "width": 3}, "value": THR * 100}}))
                 gauge.update_layout(height=320)
                 st.plotly_chart(gauge, width="stretch")
                 st.metric("Décision", res["label"])
             with cole:
-                st.subheader("Pourquoi ? - facteurs de risque")
+                st.subheader("Pourquoi ? — facteurs de risque")
                 ex = api_post("/explain", vals)
                 if ex.status_code == 200:
                     for fct in ex.json()["factors"][:6]:
                         f = fct["feature"]
                         up = fct["direction"] == "augmente"
                         icon = "🔴" if up else "🟢"
-                        base_feat = f.split("_")[0] if f not in ACTIONS else f
                         action = ACTIONS.get(f, "")
                         txt = f"{icon} **{f}** — {'augmente' if up else 'réduit'} le risque"
                         if up and action:
@@ -253,7 +243,6 @@ elif page == "Simulateur client":
                     st.caption("Explication indisponible.")
 
 
-# ---------------- Page 4 : Confiance du modèle ----------------
 elif page == "Confiance du modèle":
     st.title("Confiance du modèle")
     info = api_get("/model-info").json()
@@ -276,5 +265,5 @@ elif page == "Confiance du modèle":
                  labels={"importance": "Poids relatif", "feature": ""})
     fig.update_layout(height=400)
     st.plotly_chart(fig, width="stretch")
-    st.info("Lecture métier : un **CSAT bas**, une **faible ancienneté**, **peu de connexions** "
-            "et des **échecs de paiement** sont les signaux de départ les plus forts.")
+    st.info("Lecture métier : un CSAT bas, une faible ancienneté, peu de connexions et des échecs "
+            "de paiement sont les signaux de départ les plus forts.")

@@ -1,6 +1,6 @@
 {
   "model_name": "RandomForest",
-  "threshold": 0.1651,
+  "threshold": 0.1787,
   "features": [
     "age",
     "tenure_months",
@@ -69,11 +69,11 @@
   ],
   "target": "churn",
   "metrics_test": {
-    "Accuracy": 0.724,
-    "Precision": 0.2456,
-    "Recall": 0.8235,
-    "F1": 0.3784,
-    "ROC_AUC": 0.7968,
-    "PR_AUC": 0.2811
+    "Accuracy": 0.7325,
+    "Precision": 0.2481,
+    "Recall": 0.799,
+    "F1": 0.3786,
+    "ROC_AUC": 0.7923,
+    "PR_AUC": 0.2761
   }
 }

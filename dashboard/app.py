@@ -23,7 +23,7 @@ from src import config
 
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000")
 
-st.set_page_config(page_title="Pilotage Retention Client", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Pilotage Retention Client", layout="wide")
 
 # Actions metier suggerees selon le facteur de risque
 ACTIONS = {
@@ -83,7 +83,7 @@ def check_api():
 
 
 # ---------------- Sidebar ----------------
-st.sidebar.title("📊 Pilotage Rétention")
+st.sidebar.title("Pilotage Rétention Client")
 page = st.sidebar.radio("Navigation", [
     "Vue d'ensemble", "Clients à risque", "Simulateur client", "Confiance du modèle",
 ])
@@ -101,7 +101,7 @@ THR = api_get("/model-info").json()["threshold"]
 
 # ---------------- Page 1 : Vue d'ensemble ----------------
 if page == "Vue d'ensemble":
-    st.title("Vue d'ensemble — risque de résiliation")
+    st.title("Vue d'ensemble - risque de résiliation")
     n = len(scored)
     n_risk = int((scored["churn_pred"] == 1).sum())
     rev_risk = float(scored["revenue_at_risk"].sum())
@@ -109,7 +109,8 @@ if page == "Vue d'ensemble":
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Clients", f"{n:,}".replace(",", " "))
-    c2.metric("Clients à risque", f"{n_risk:,}".replace(",", " "), f"{n_risk/n:.1%}")
+    c2.metric("Clients à risque", f"{n_risk:,}".replace(",", " "))
+    c2.caption(f"🔴 {n_risk/n:.1%} de la base clients")
     c3.metric("Churns attendus", f"{exp_churn:,.0f}".replace(",", " "))
     c4.metric("Revenu global à risque", f"{rev_risk:,.0f} €".replace(",", " "))
 
@@ -138,7 +139,7 @@ if page == "Vue d'ensemble":
 
 # ---------------- Page 2 : Clients à risque ----------------
 elif page == "Clients à risque":
-    st.title("Clients à risque — priorisation des actions")
+    st.title("Clients à risque - priorisation des actions")
     st.caption("Triés par revenu à risque décroissant : qui contacter en priorité.")
 
     colf1, colf2, colf3 = st.columns(3)
@@ -169,7 +170,7 @@ elif page == "Clients à risque":
 
 # ---------------- Page 3 : Simulateur ----------------
 elif page == "Simulateur client":
-    st.title("Simulateur — prédiction en temps réel")
+    st.title("Simulateur - prédiction en temps réel")
     st.caption("Saisissez (ou modifiez) un profil client et obtenez la probabilité de churn + les facteurs.")
 
     base = df.sample(1, random_state=7).iloc[0]
@@ -235,7 +236,7 @@ elif page == "Simulateur client":
                 st.plotly_chart(gauge, width="stretch")
                 st.metric("Décision", res["label"])
             with cole:
-                st.subheader("Pourquoi ? — facteurs de risque")
+                st.subheader("Pourquoi ? - facteurs de risque")
                 ex = api_post("/explain", vals)
                 if ex.status_code == 200:
                     for fct in ex.json()["factors"][:6]:

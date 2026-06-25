@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 from api.main import app
 
 client = TestClient(app)
-
 EXAMPLE = app.openapi()["components"]["schemas"]["CustomerFeatures"]["example"]
 
 
@@ -21,6 +20,12 @@ def test_model_info():
     r = client.get("/model-info")
     assert r.status_code == 200
     assert "metrics_test" in r.json()
+
+
+def test_model_info_top_drivers():
+    r = client.get("/model-info")
+    assert r.status_code == 200
+    assert len(r.json()["top_drivers"]) >= 5
 
 
 def test_predict_valid():
@@ -51,8 +56,26 @@ def test_predict_wrong_type():
     assert client.post("/predict", json=bad).status_code == 422
 
 
+def test_predict_batch():
+    r = client.post("/predict-batch", json={"customers": [EXAMPLE, EXAMPLE]})
+    assert r.status_code == 200
+    assert r.json()["n"] == 2
+    assert all(0 <= x["churn_probability"] <= 1 for x in r.json()["results"])
+
+
+def test_predict_batch_empty():
+    assert client.post("/predict-batch", json={"customers": []}).status_code == 400
+
+
+def test_explain():
+    r = client.post("/explain", json=EXAMPLE)
+    assert r.status_code == 200
+    assert len(r.json()["factors"]) >= 1
+    assert r.json()["factors"][0]["direction"] in ("augmente", "reduit")
+
+
 if __name__ == "__main__":
-    for name, fn in sorted(globals().items()):
-        if name.startswith("test_") and callable(fn):
-            fn(); print(f"PASS {name}")
-    print("\nTous les tests API OK.")
+    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    for fn in tests:
+        fn(); print(f"PASS {fn.__name__}")
+    print(f"\n{len(tests)} tests API OK.")

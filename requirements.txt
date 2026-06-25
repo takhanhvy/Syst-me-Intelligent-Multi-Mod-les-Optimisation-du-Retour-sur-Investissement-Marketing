@@ -1,14 +1,17 @@
-pandas>=2.0
-numpy>=1.24
-scikit-learn>=1.3
-xgboost>=2.0
-shap>=0.44
-matplotlib>=3.7
-seaborn>=0.12
-plotly>=5.18
-streamlit>=1.30
-fastapi>=0.110
-uvicorn>=0.27
-pydantic>=2.5
-requests>=2.31
-jupyter>=1.0
+pandas
+numpy
+scikit-learn
+xgboost
+shap
+matplotlib
+seaborn
+plotly
+streamlit
+fastapi
+uvicorn
+pydantic
+requests
+
+# Notebook EDA (optionnel) : retire car 'jupyter' tire 'jedi' dont les chemins
+# depassent la limite Windows MAX_PATH (260 car.) sur ce dossier long.
+# Pour rejouer eda/01_eda.ipynb : `pip install notebook` ou ouvrir via VS Code.

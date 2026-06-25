@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Environnements
+.venv/
+venv/
+env/
+
+# Artefacts modèles (volumineux, régénérables)
+models/*.joblib
+models/*.pkl
+
+# Figures générées (régénérables) — décommente si tu ne veux pas les versionner
+# reports/figures/*.png
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
